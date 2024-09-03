@@ -1,0 +1,62 @@
+kind: Namespace
+metadata:
+  name: k8s-storage
+---
+# PV
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rox-pv
+  namespace: k8s-storage
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: "rox-storage"
+  accessModes:
+    - ReadOnlyMany
+  hostPath:
+    path: /mnt/data-rox
+---
+# PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rox-pvc
+  namespace: k8s-storage
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: "rox-storage"
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: rox-pv
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rox-deployment
+  namespace: k8s-storage
+  labels:
+    app: rox-app
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: rox-app
+  template:
+    metadata:
+      labels:
+        app: rox-app
+    spec:
+      containers:
+        - name: rox-container
+          image: nginx
+          volumeMounts:
+            - name: rox-vol
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: rox-vol
+          persistentVolumeClaim:
+            claimName: rox-pvc

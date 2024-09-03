@@ -1,0 +1,59 @@
+kind: Namespace
+metadata:
+  name: k8s-storage
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rwx-pv
+  namespace: k8s-storage
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: "rwx-storage"
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /mnt/data-rwx
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwx-pvc
+  namespace: k8s-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "rwx-storage"
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: rwx-pv
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rwx-deployment
+  namespace: k8s-storage
+  labels:
+    app: rwx-app
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: rwx-app
+  template:
+    metadata:
+      labels:
+        app: rwx-app
+    spec:
+      containers:
+        - name: rwx-container
+          image: nginx
+          volumeMounts:
+            - name: rwx-vol
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: rwx-vol
+          persistentVolumeClaim:
+            claimName: rwx-pvc

@@ -1,0 +1,62 @@
+kind: Namespace
+metadata:
+  name: k8s-storage
+---
+# PV
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rwo-pv
+  namespace: k8s-storage
+spec:
+  capacity:
+    storage: 1Gi
+  storageClassName: "rwo-storage"
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/data-rwo
+---
+# PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwo-pvc
+  namespace: k8s-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "rwo-storage"
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: rwo-pv
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rwo-deployment
+  namespace: k8s-storage
+  labels:
+    app: rwo-app
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: rwo-app
+  template:
+    metadata:
+      labels:
+        app: rwo-app
+    spec:
+      containers:
+        - name: rwo-container
+          image: nginx
+          volumeMounts:
+            - name: rwo-vol
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: rwo-vol
+          persistentVolumeClaim:
+            claimName: rwo-pvc
